@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { PokemonDetail, PokemonListResult, Type } from "./types";
 
 const PokemonApp = () => {
   const [pokemon, setPokemon] = useState<PokemonDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
-  const [page, setPage] = useState<number>(1);
+  const [failedPokemon, setFailedPokemon] = useState<PokemonDetail[]>([]);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [filterType, setFilterType] = useState("all");
@@ -23,19 +24,46 @@ const PokemonApp = () => {
         const response = await fetch(
           `https://pokeapi.co/api/v2/pokemon?limit=151`
         );
-        if (!response.ok) throw new Error("Failed to fetch Pokemon");
+        if (!response.ok) throw new Error("Failed to fetch Pokemon list");
         const data = await response.json();
 
-        // Fetch detailed data for each Pokemon
-        const detailedData: PokemonDetail[] = await Promise.all(
+        // Use Promise.allSettled instead of Promise.all
+        const results = await Promise.allSettled(
           data.results.map(async (pokemon: PokemonListResult) => {
-            const res = await fetch(pokemon.url);
-            return res.json();
+            try {
+              const res = await fetch(pokemon.url);
+              if (!res.ok) throw new Error(`Failed to fetch ${pokemon.name}`);
+              return await res.json();
+            } catch (error) {
+              throw {
+                name: pokemon.name,
+                error: error instanceof Error ? error.message : "error",
+              };
+            }
           })
         );
 
-        setPokemon(detailedData);
-        setError(null);
+        // Separate successful and failed fetches
+        const successfulPokemon: PokemonDetail[] = [];
+        const failedFetches: PokemonDetail[] = [];
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            successfulPokemon.push(result.value);
+          } else {
+            failedFetches.push(result.reason);
+          }
+        });
+
+        setPokemon(successfulPokemon);
+        setFailedPokemon(failedFetches);
+
+        // Only set error if no Pokemon were successfully fetched
+        if (successfulPokemon.length === 0) {
+          setError("Failed to fetch any Pokemon");
+        } else {
+          setError(null);
+        }
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -73,15 +101,27 @@ const PokemonApp = () => {
       </div>
     );
 
-  if (error)
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>Error loading Pokemon: {error}</AlertDescription>
-      </Alert>
-    );
-
   return (
     <div className="container mx-auto p-4">
+      {error && (
+        <Alert variant="destructive" className="mb-5">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading Pokemon:</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {failedPokemon.length > 0 && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading Pokemon:</AlertTitle>
+          <AlertDescription>
+            {`Failed to load ${failedPokemon.length} Pokemon: `}
+            {failedPokemon.map((f) => f.name).join(", ")}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-6 space-y-4">
         <div className="flex items-center space-x-4">
           <div className="relative flex-1">
@@ -127,50 +167,56 @@ const PokemonApp = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {paginatedPokemon.map((pokemon: PokemonDetail) => (
-          <Card key={pokemon.id} className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="capitalize">{pokemon.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <img
-                src={pokemon.sprites.front_default}
-                alt={pokemon.name}
-                className="w-32 h-32 mx-auto"
-              />
-              <div className="mt-2 flex flex-wrap gap-2">
-                {pokemon.types.map((type: Type) => (
-                  <span
-                    key={type.type.name}
-                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                  >
-                    {type.type.name}
-                  </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {paginatedPokemon.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {paginatedPokemon.map((pokemon: PokemonDetail) => (
+              <Card key={pokemon.id} className="overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="capitalize">{pokemon.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <img
+                    src={pokemon.sprites.front_default}
+                    alt={pokemon.name}
+                    className="w-32 h-32 mx-auto"
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {pokemon.types.map((type) => (
+                      <span
+                        key={type.type.name}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      >
+                        {type.type.name}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      <div className="mt-6 flex justify-center items-center space-x-4">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="p-2 border rounded-lg disabled:opacity-50"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <span>Page {page}</span>
-        <button
-          onClick={() => setPage((p: number) => p + 1)}
-          disabled={offset + itemsPerPage >= filteredPokemon.length}
-          className="p-2 border rounded-lg disabled:opacity-50"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </button>
-      </div>
+          <div className="mt-6 flex justify-center items-center space-x-4">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 border rounded-lg disabled:opacity-50"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <span>Page {page}</span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={offset + itemsPerPage >= filteredPokemon.length}
+              className="p-2 border rounded-lg disabled:opacity-50"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-8">No Pokemon found</div>
+      )}
     </div>
   );
 };
