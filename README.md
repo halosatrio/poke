@@ -6,7 +6,7 @@ This project is a modern web application built with React that interfaces with t
 
 ## Technical Stack
 
-- **Frontend Framework**: React
+- **Frontend Framework**: React + Vite + TypeScript
 - **UI Components**: shadcn/ui
 - **Icons**: Lucide React
 - **Styling**: Tailwind CSS
@@ -81,21 +81,12 @@ The application follows a modular component structure:
 ### Unit Tests
 
 - Component rendering tests
-- State management tests
-- API integration tests
-- Error handling tests
 
 ### Integration Tests
 
 - User interaction flows
 - API integration flows
 - Error scenarios
-
-### E2E Tests
-
-- Complete user journeys
-- Cross-browser testing
-- Mobile responsiveness testing
 
 ## Deployment and Monitoring
 

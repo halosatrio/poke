@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { PokemonDetail, PokemonListResult, Type } from "./types";
 
-const PokemonApp = () => {
+export default function PokemonApp() {
   const [pokemon, setPokemon] = useState<PokemonDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
@@ -219,6 +219,4 @@ const PokemonApp = () => {
       )}
     </div>
   );
-};
-
-export default PokemonApp;
+}
