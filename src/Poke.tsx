@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { PokemonDetail, PokemonListResult, Type } from "./types";
 
 const PokemonApp = () => {
-  const [pokemon, setPokemon] = useState([]);
+  const [pokemon, setPokemon] = useState<PokemonDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
+  const [error, setError] = useState<null | string>(null);
+  const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [filterType, setFilterType] = useState("all");
@@ -20,14 +21,14 @@ const PokemonApp = () => {
       try {
         setLoading(true);
         const response = await fetch(
-          `https://pokeapi.co/api/v2/pokemon?limit=100`
+          `https://pokeapi.co/api/v2/pokemon?limit=151`
         );
         if (!response.ok) throw new Error("Failed to fetch Pokemon");
         const data = await response.json();
 
         // Fetch detailed data for each Pokemon
-        const detailedData: any = await Promise.all(
-          data.results.map(async (pokemon: any) => {
+        const detailedData: PokemonDetail[] = await Promise.all(
+          data.results.map(async (pokemon: PokemonListResult) => {
             const res = await fetch(pokemon.url);
             return res.json();
           })
@@ -35,8 +36,10 @@ const PokemonApp = () => {
 
         setPokemon(detailedData);
         setError(null);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -47,14 +50,14 @@ const PokemonApp = () => {
 
   // Filter and sort pokemon
   const filteredPokemon = pokemon
-    .filter((p: any) => {
+    .filter((p: PokemonDetail) => {
       const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
       const matchesType =
         filterType === "all" ||
-        p.types.some((t: any) => t.type.name === filterType);
+        p.types.some((t: Type) => t.type.name === filterType);
       return matchesSearch && matchesType;
     })
-    .sort((a: any, b: any) => {
+    .sort((a: PokemonDetail, b: PokemonDetail) => {
       return sortOrder === "asc"
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name);
@@ -105,16 +108,27 @@ const PokemonApp = () => {
             onChange={(e) => setFilterType(e.target.value)}
           >
             <option value="all">All Types</option>
-            <option value="fire">Fire</option>
-            <option value="water">Water</option>
-            <option value="grass">Grass</option>
+            <option value="bug">Bug</option>
+            <option value="dragon">Dragon</option>
             <option value="electric">Electric</option>
+            <option value="fighting">Fighting</option>
+            <option value="fire">Fire</option>
+            <option value="flying">Flying</option>
+            <option value="ghost">Ghost</option>
+            <option value="grass">Grass</option>
+            <option value="ground">Ground</option>
+            <option value="ice">Ice</option>
+            <option value="normal">Normal</option>
+            <option value="poison">Poison</option>
+            <option value="psychic">Psychic</option>
+            <option value="rock">Rock</option>
+            <option value="water">Water</option>
           </select>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {paginatedPokemon.map((pokemon: any) => (
+        {paginatedPokemon.map((pokemon: PokemonDetail) => (
           <Card key={pokemon.id} className="overflow-hidden">
             <CardHeader>
               <CardTitle className="capitalize">{pokemon.name}</CardTitle>
@@ -126,7 +140,7 @@ const PokemonApp = () => {
                 className="w-32 h-32 mx-auto"
               />
               <div className="mt-2 flex flex-wrap gap-2">
-                {pokemon.types.map((type: any) => (
+                {pokemon.types.map((type: Type) => (
                   <span
                     key={type.type.name}
                     className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -150,7 +164,7 @@ const PokemonApp = () => {
         </button>
         <span>Page {page}</span>
         <button
-          onClick={() => setPage((p: any) => p + 1)}
+          onClick={() => setPage((p: number) => p + 1)}
           disabled={offset + itemsPerPage >= filteredPokemon.length}
           className="p-2 border rounded-lg disabled:opacity-50"
         >
