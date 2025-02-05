@@ -1,107 +1,144 @@
-# Pokemon Explorer Web Application
+# Pokemon Explorer Application
 
-## Overview
+- deployed and hosted on my private server. you can access it via this link: **https://poke.bayubit.com**
+- you can read the codebase on my github repository: **https://github.com/halosatrio/poke**
 
-This project is a modern web application built with React that interfaces with the PokeAPI to display Pokemon information in an interactive and user-friendly way. The application features pagination, search functionality, sorting, and filtering capabilities.
+## Libraries and Frameworks Used
 
-## Technical Stack
+- React
+- TypeScript
+- shadcn/ui
+- Tailwind
 
-- **Frontend Framework**: React + Vite + TypeScript
-- **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **Styling**: Tailwind CSS
+reason: simplicity. doesn't use next.js because it's overkill. simple React + Vite is enough for small project like this.
 
-## Key Features
+## Component Structure and State Management
 
-1. **Data Fetching and Display**
+### Component Architecture
 
-   - Fetches Pokemon data from PokeAPI
-   - Displays Pokemon in a responsive grid layout
-   - Shows Pokemon images, names, and types
+implemented a modular component structure following these principles:
 
-2. **User Interface**
+1. **Main Component (`PokemonApp`)**
 
-   - Clean and modern design using shadcn/ui components
-   - Responsive layout that works on all device sizes
-   - Loading states and error handling
-   - Accessible UI elements
+   - Manages core application state
+   - Handles API interactions
+   - Contains main layout structure
 
-3. **Advanced Features**
+2. **State Management**
 
-   - Search: Filter Pokemon by name
-   - Sorting: Arrange Pokemon alphabetically (A-Z or Z-A)
-   - Filtering: Filter Pokemon by type
-   - Pagination: Navigate through Pokemon list with page controls
+   - Used React's built-in hooks for state management
 
-4. **Performance Optimizations**
-   - Efficient state management using React hooks
-   - Pagination to handle large datasets
-   - Debounced search input
-   - Memoized filtering and sorting operations
+   ```ts
+   const [pokemon, setPokemon] = useState<PokemonDetail[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const [failedPokemon, setFailedPokemon] = useState<FailedPokemon[]>([]);
+   ```
 
-## Architecture Decisions
+   - Separated concerns into distinct state variables
+   - Used TypeScript for type safety
 
-### Component Structure
+3. **Scalability Considerations**
+   - Components are modular and reusable
+   - State logic is centralized
+   - TypeScript interfaces ensure type safety
 
-The application follows a modular component structure:
+## Error Handling and Edge Cases
 
-- `PokemonApp`: Main component handling state and data fetching
-- Error boundaries for graceful error handling
-- Reusable UI components from shadcn/ui
+We implemented comprehensive error handling:
 
-### State Management
+1. **API Error Handling**
 
-- Uses React's built-in hooks (useState, useEffect) for state management
-- Implements proper loading and error states
-- Maintains clean separation of concerns
+   ```ts
+   try {
+     const response = await fetch(url);
+     if (!response.ok) throw new Error("Failed to fetch Pokemon");
+   } catch (err) {
+     setError(err instanceof Error ? err.message : "An unknown error occurred");
+   }
+   ```
 
-### API Integration
+2. **Partial Failure Handling**
 
-- Implements error handling for API failures
-- Data validation and sanitization
-- Rate limiting consideration
-- Caching strategies
+   - Used `Promise.allSettled` for individual Pokemon fetches
+   - Tracks failed fetches separately
+   - Displays successful data even when some requests fail
 
-### Security Considerations
-
-1. **API Security**
-
-   - Input sanitization
-   - CORS handling
-   - Rate limiting
-   - Error message sanitization
-
-2. **Data Validation**
-   - Type checking of API responses
-   - Null checking
-   - Default values for missing data
+3. **Edge Cases**
+   - Loading states
+   - Empty results handling
 
 ## Testing Strategy
 
-### Unit Tests
+Implemented comprehensive testing using React Testing Library:
 
-- Component rendering tests
+```typescript
+describe("PokemonApp", () => {
+  it("shows loading state initially", () => {
+    render(<PokemonApp />);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+});
+```
 
-### Integration Tests
+## Data Validation
 
-- User interaction flows
-- API integration flows
-- Error scenarios
+**Type Safety**
+
+```ts
+interface PokemonDetail {
+  id: number;
+  name: string;
+  types: PokemonType[];
+  sprites: PokemonSprites;
+}
+```
+
+## User Interface Design
+
+- Used shadcn/ui for consistent design
+- Responsive design layout
+- Clear loading states
+- Error feedback
+- Intuitive navigation
+
+## Advanced Features Implementation
+
+1. **Pagination**
+
+   ```ts
+   const itemsPerPage = 20;
+   const offset = (page - 1) * itemsPerPage;
+   const paginatedPokemon = filteredPokemon.slice(
+     offset,
+     offset + itemsPerPage
+   );
+   ```
+
+2. **Search**
+
+   - Real-time search functionality
+
+3. **Sorting & Filtering**
+   - Type-based filtering
+   - Combinable filter and sorting
 
 ## Deployment and Monitoring
 
-### Deployment
+### Deployment Strategy
 
-1. **Build Process**
+#### How I deploy this app
 
-   ```bash
-   npm run build
-   ```
+- using docker:
+  - build the docker image
+  - copy the docker image to my server
+- using trafeik (reverse proxy):
+  - edit file `docker-compose.yaml` to include new service (this app)
+  - start the docker compose
 
-2. **Deployment Options**
-   - Vercel (recommended)
-   - Netlify
-   - AWS Amplify
+#### Docker alternative:
+
+- build using `pnpm run build`, deploy on vps using tools like `nginx` and `pm2` as webserver and reverse proxy
 
 ### Monitoring
 
@@ -113,11 +150,9 @@ The application follows a modular component structure:
 
 2. **Error Monitoring**
 
-   - Error tracking service (e.g., Sentry)
    - Console error logging
    - API error tracking
 
 3. **Usage Analytics**
-   - User interaction tracking
-   - Performance metrics
-   - Error rates
+   - Umami
+   - google analytics
