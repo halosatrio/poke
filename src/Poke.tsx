@@ -137,7 +137,10 @@ export default function PokemonApp() {
           <select
             className="p-2 border rounded-lg"
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setSortOrder(e.target.value);
+            }}
           >
             <option value="asc">A-Z</option>
             <option value="desc">Z-A</option>
@@ -145,7 +148,10 @@ export default function PokemonApp() {
           <select
             className="p-2 border rounded-lg"
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setFilterType(e.target.value);
+            }}
           >
             <option value="all">All Types</option>
             <option value="bug">Bug</option>

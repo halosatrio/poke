@@ -1,7 +1,9 @@
 # Pokemon Explorer Application
 
-- deployed and hosted on my private server. you can access it via this link: **https://poke.bayubit.com**
-- you can read the codebase on my github repository: **https://github.com/halosatrio/poke**
+- deployed and hosted on my private server. you can access it via this link:
+  - **https://poke.bayubit.com**
+- you can read the codebase on my github repository:
+  - **https://github.com/halosatrio/poke**
 
 ## Libraries and Frameworks Used
 
